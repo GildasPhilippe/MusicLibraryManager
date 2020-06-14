@@ -2,18 +2,85 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
-    <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'">
-    <title>Hello World!</title>
+    <link type="text/css" rel="stylesheet" href="./static/css/materialize.min.css"  media="screen,projection"/>
+    <link type="text/css" rel="stylesheet" href="./static/css/style.css"  media="screen,projection"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="Content-Security-Policy" content="img-src 'self' data:; default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';">
+
+    <title>Music Library Manager</title>
   </head>
   <body>
-    <h1>Hello World!</h1>
-    We are using Node.js <span id="node-version"></span>,
-    Chromium <span id="chrome-version"></span>,
-    and Electron <span id="electron-version"></span>.
 
-    <!-- You can also require other files to run in this process -->
+    
+    <div class="navbar-fixed">
+      <nav class="nav-extended">
+        <div class="nav-wrapper">
+          <a href="#" class="brand-logo left">Music Library Manager</a>
+          <ul id="nav-mobile" class="right">
+            <li><a href="#" id="load">Load songs</a></li>
+            <li><a href="#" id="destination">Set destination</a></li>
+            <li><a href="#" id="compute">Compute</a></li>
+            <li><a class="modal-trigger" href="#categoriesModal" id="categoriesBtn">Categories</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+
+    <div>
+      <form action="#" hidden>
+        <input type="file" id="sourceInput" webkitdirectory>
+        <input type="file" id="destinationInput" webkitdirectory >
+      </form>
+    </div>  
+
+    <main class="row col s12">
+      <div id="songList">
+        <table class="striped">
+          <thead>
+            <tr>
+                <th>Icon</th>
+                <th>Filename</th>
+                <th>Artist</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Process</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr>
+              <td colspan="6" class="center-align"><em>No source folder loaded</em></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Categories Modal -->
+      <div id="categoriesModal" class="modal">
+        <div class="modal-content">
+          <h4>Categories</h4>
+          <div class="container" id="categoriesModalContent">
+
+            <form id="newCategoryForm" class="row">
+              <div class="input-field col s12">
+                <input value="" id="newCategoryInput" type="text" class="validate">
+                <label class="active" for="newCategoryInput">New Category</label>
+              </div>
+            </form>
+
+            <ul class="collection">
+            </ul>
+        
+          </div>
+        </div>
+        <div class="modal-footer">
+          <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
+        </div>
+      </div>
+
+    </main>
+
+    <script type="text/javascript" src="./static/js/materialize.min.js"></script>
     <script src="./renderer.js"></script>
   </body>
 </html>
