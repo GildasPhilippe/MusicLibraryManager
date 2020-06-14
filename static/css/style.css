@@ -12,3 +12,17 @@ main {
   max-height: 30px;
   margin: auto;
 }
+
+.iconCell {
+  padding: 5px;
+}
+
+td, div.input-field {
+ padding: 0px;
+ margin: 0px;
+}
+
+.progress-td{
+  padding: 50px;
+  background-color: white;
+}
