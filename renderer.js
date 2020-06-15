@@ -48,6 +48,7 @@ function getFolder(fileInput){
 
 function addRow(song){
   const tr = document.createElement('tr');
+
   const tdIcon = document.createElement('td');
   tdIcon.classList.add('iconCell')
   if(song['picture'] != undefined){
@@ -58,11 +59,24 @@ function addRow(song){
     tdIcon.appendChild(cover);
   }
   tr.appendChild(tdIcon);
-  for(const field of ['fname', 'artist', 'title']){
+
+  const tdFname = document.createElement('td');
+  let ext = song['fname'].split('.');
+  ext = ext[ext.length-1];
+  let fname;
+  if(song['artist'].length>0 && song['title'].length>0) fname = `${song['artist']} - ${song['title']}.${ext}`;
+  else fname = song['fname'];
+  tdFname.innerHTML = fname;
+  tdFname.classList.add(`data-fname`);
+  tdFname.setAttribute('data-ext', ext)
+  tr.appendChild(tdFname)
+
+  for(const field of ['artist', 'title']){
     const td = document.createElement('td');
-    td.innerHTML = song[field];
+    td.innerHTML = `<input value="${song[field]}" class="data-${field}" type="text">`;
     tr.appendChild(td);
   }
+
   const tdSelect = document.createElement('td');
   const divSelect = document.createElement('div');
   const select = document.createElement('select');
@@ -86,12 +100,6 @@ function Uint8ToString(u8a){
   return c.join('');
 }
 
-// WRITE DATE
-
-destination.addEventListener('click', function(){
-  destinationInput.click()
-})
-
 // CATEGORIES MANAGEMENT
 
 ipc.on('category:get', function(event, categories){
@@ -109,14 +117,16 @@ newCategoryForm.addEventListener('submit', function(event){
 
 function addCategory(){
   let category = newCategoryInput.value;
-  newCategoryInput.value = '';
-  displayCategory(category);
-  ipc.send('category:add', category);
-  let selects = document.getElementsByClassName('category-select');
-  for(const select of selects){
-    select.appendChild(makeOption(category));
+  if(category.length > 0){
+    newCategoryInput.value = '';
+    displayCategory(category);
+    ipc.send('category:add', category);
+    let selects = document.getElementsByClassName('category-select');
+    for(const select of selects){
+      select.appendChild(makeOption(category));
+    }
+    initializeCategorySelect();
   }
-  initializeCategorySelect();
 }
 
 function displayCategory(category){
@@ -140,8 +150,8 @@ function removeCategory(category, li){
         for (var i = 0; i < children.length; i++) {
           let child = children[i];
           if(child.value == category){
+            if(select.value == category) select.firstChild.selected = 'selected';
             select.removeChild(child);
-            select.firstChild.selected = 'selected';
           }
         }
       }
@@ -153,6 +163,8 @@ function removeCategory(category, li){
 function initializeCategorySelect(){
   var selects = document.querySelectorAll('select');
   var selectInstances = M.FormSelect.init(selects, '');
+  document.querySelectorAll(".data-artist").forEach(input => setUpdateFnameListener(input));
+  document.querySelectorAll(".data-title").forEach(input => setUpdateFnameListener(input));
 }
 
 function makeOption(category){
@@ -161,3 +173,23 @@ function makeOption(category){
   opt.innerHTML = category;
   return opt;
 }
+
+// METADATA MANAGEMENT
+
+function setUpdateFnameListener(input){
+  input.addEventListener("input", function(){
+    if(input.value.length > 0){
+      let parent = input.parentNode.parentNode;
+      let artist = parent.getElementsByClassName('data-artist')[0].value;
+      let title = parent.getElementsByClassName('data-title')[0].value;
+      let fname = parent.getElementsByClassName('data-fname')[0];
+      fname.innerHTML = `${artist} - ${title}.${fname.getAttribute('data-ext')}`;
+    }
+  })
+}
+
+// WRITE DATE
+
+compute.addEventListener('click', function(){
+  destinationInput.click();
+})
