@@ -1,6 +1,7 @@
 node_modules
 
 static/songs/
+static/output/
 release-builds/
 
 .DS_Store

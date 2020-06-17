@@ -9,9 +9,9 @@
 
     <title>Music Library Manager</title>
   </head>
+  
   <body>
 
-    
     <div class="navbar-fixed">
       <nav class="nav-extended">
         <div class="nav-wrapper">
@@ -28,7 +28,7 @@
     <div>
       <form action="#" hidden>
         <input type="file" id="sourceInput" webkitdirectory>
-        <input type="file" id="destinationInput" webkitdirectory >
+        <input type="file" id="destinationInput" webkitdirectory>
       </form>
     </div>  
 
@@ -80,5 +80,30 @@
 
     <script type="text/javascript" src="./static/js/materialize.min.js"></script>
     <script src="./renderer.js"></script>
+
+    <!-- Footer progressbar -->
+    <div id="footer" class="row center-align">
+      <div class="progress col s11">
+        <div class="determinate" style="width: 0%" id="computingProgress"></div>
+      </div>
+      <div class=" col s1" id="computingProgressPercentage">0%</div>
+    </div>
+
+    <!-- Modal Results -->
+    <div id="modalResult" class="modal bottom-sheet">
+      <div class="modal-content">
+        <div class="row">
+          <div class="col s12">
+            <ul class="tabs" id="tabs">
+              <li class="tab col s3"><a class="active" href="#failureTab">Failures</a></li>
+              <li class="tab col s3"><a href="#successTab">Successes</a></li>
+            </ul>
+          </div>
+          <div id="failureTab" class="col s12"></div>
+          <div id="successTab" class="col s12"></div>
+        </div>
+      </div>
+    </div>
+
   </body>
 </html>

@@ -4,12 +4,15 @@ const tbody = document.querySelector('#songList tbody');
 const categoriesUl = document.querySelector('#categoriesModalContent ul');
 let categoriesList;
 let fold = 'static/songs';
+let modalInstances;
+let tabsInstance;
 
 // SETTING UP
 
 document.addEventListener('DOMContentLoaded', function() {
   var modals = document.querySelectorAll('.modal');
-  var modalInstances = M.Modal.init(modals, "");
+  modalInstances = M.Modal.init(modals, "");
+  tabsInstance = M.Tabs.init(tabs, "");
 });
 window.onload = function(){
   ipc.send('category:get', '');
@@ -22,14 +25,16 @@ load.addEventListener('click', function(){
 })
 sourceInput.addEventListener('change', function(e, sour){
   let folder = getFolder(sourceInput);
-  tbody.innerHTML = `
-    <tr>
-      <td colspan="6" class="progress-td">
-        <div class="progress"><div class="indeterminate"></div></div>
-      </td>
-    </tr>
-  `;
-  if(folder.length > 0) ipc.send('source:updateFolder', folder);
+  if(folder.length > 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="progress-td">
+          <div class="progress"><div class="indeterminate"></div></div>
+        </td>
+      </tr>
+    `;
+    ipc.send('source:load', folder);
+  }
 });
 ipc.on('source:load', function (event, songs) {
   tbody.innerHTML = '';
@@ -54,8 +59,10 @@ function addRow(song){
   if(song['picture'] != undefined){
     const cover = document.createElement('img');
     let picture = song['picture'][0];
-    cover.setAttribute('src', `data:${picture.format};base64,${btoa(Uint8ToString(picture.data))}`);
+    let dataPicture = btoa(Uint8ToString(picture.data));
+    cover.setAttribute('src', `data:${picture.format};base64,${dataPicture}`);
     cover.setAttribute('class', 'cover responsive-img');
+    cover.setAttribute('data-picture', dataPicture)
     tdIcon.appendChild(cover);
   }
   tr.appendChild(tdIcon);
@@ -87,7 +94,10 @@ function addRow(song){
   divSelect.appendChild(select);
   tdSelect.appendChild(divSelect);
   tr.appendChild(tdSelect);
-  tr.innerHTML += '<td><label><input type="checkbox" class="filled-in" checked="checked"/><span></span></label></td>'
+  tr.innerHTML += '<td><label><input type="checkbox" class="filled-in process-checkbox" checked="checked"/><span></span></label></td>'
+  
+  tr.classList.add('song-row')
+  tr.setAttribute("data-source", song["path"])
   tbody.appendChild(tr);
 }
 
@@ -183,7 +193,8 @@ function setUpdateFnameListener(input){
       let artist = parent.getElementsByClassName('data-artist')[0].value;
       let title = parent.getElementsByClassName('data-title')[0].value;
       let fname = parent.getElementsByClassName('data-fname')[0];
-      fname.innerHTML = `${artist} - ${title}.${fname.getAttribute('data-ext')}`;
+      if(artist.length > 0 && title.length > 0)
+        fname.innerHTML = `${artist} - ${title}.${fname.getAttribute('data-ext')}`;
     }
   })
 }
@@ -192,4 +203,56 @@ function setUpdateFnameListener(input){
 
 compute.addEventListener('click', function(){
   destinationInput.click();
-})
+});
+
+destinationInput.addEventListener('change', function(){
+  let folder = getFolder(destinationInput);
+  let rows = document.getElementsByClassName('song-row');
+  if(folder.length > 0 && rows.length > 0){
+    let songsData = getSongsData(rows);
+    ipc.send('compute:run', {destination: folder, songsData: songsData});
+  }
+});
+
+ipc.on('compute:start', function(event, data){
+  footer.style.display = "block";
+});
+
+ipc.on('compute:run', function(event, percentage){
+  computingProgress.style.width = `${percentage}%`;
+  computingProgressPercentage.innerHTML = `${percentage}%`;
+});
+
+ipc.on('compute:end', function(event, data){
+  modalInstances[1].open();
+  footer.style.display = 'none';
+  failureTab.innerHTML = data["failure"].join("<br>");
+  successTab.innerHTML = data["success"].join("<br>");
+  tabsInstance.select('failureTab');
+});
+
+function getSongsData(rows){
+  data = [];
+  for (const row of rows){
+    if(row.querySelector(".process-checkbox").checked){
+      let source = row.getAttribute("data-source");
+      let fname = row.querySelector(".data-fname").innerHTML;
+      let artist = row.querySelector(".data-artist").value;
+      let title = row.querySelector(".data-title").value;
+      let category = row.querySelector(".category-select").value
+      let picture;
+      if(row.firstElementChild.firstElementChild) 
+        picture = row.querySelector(".cover").getAttribute("data-picture");
+      else picture = "";
+      data.push({
+        source: source,
+        fname: fname,
+        artist: artist,
+        title: title,
+        category: category,
+        picture: picture
+      });
+    }
+  }
+  return data;
+}

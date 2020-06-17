@@ -5,6 +5,8 @@ const lineByLine = require('n-readlines');
 const mm = require('music-metadata');
 const ID3Writer = require('browser-id3-writer');
 
+
+let mainWindow;
 const audioFormats = [".wav", ".mp3"];
 const categoriesPath = "static/categories.txt";
 const categories = readCategories();
@@ -12,7 +14,6 @@ const categories = readCategories();
 
 // APP SETINGS
 
-let mainWindow;
 function createWindow () {
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -29,16 +30,14 @@ app.whenReady().then(() => {
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
-  sendCategories();
 })
 app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') app.quit()
 })
 
-
 // LOAD DATA
 
-ipcMain.on('source:updateFolder', function(e, fold){
+ipcMain.on('source:load', function(e, fold){
   songs = getAllSongs(fold);
   if(songs.length>0) getMetadata(songs);
 });
@@ -81,32 +80,6 @@ async function getMetadata(songs){
   mainWindow.webContents.send('source:load', songsData);
 }
 
-
-// WRITE DATA
-
-function writeMetadata(){
-  let fname_in = 'static/songs/Cee-Roo\ -\ Moses.mp3';
-  let img_name_in = 'static/img/u2.jpg';
-  let fname_out = 'static/songs/Me - My\ song.mp3'
-  
-  const songBuffer = fs.readFileSync(fname_in);
-  const coverBuffer = fs.readFileSync(img_name_in);
-  const writer = new ID3Writer(songBuffer);
-  writer.setFrame('TIT2', 'My new song')
-        .setFrame('TPE1', ['Me'])
-        .setFrame('TALB', 'EP88')
-        .setFrame('TYER', 2017)
-        /*.setFrame('APIC', {
-            type: 3,
-            description: 'Super picture'
-        })*/;
-  writer.addTag();
-  
-  const taggedSongBuffer = Buffer.from(writer.arrayBuffer);
-  fs.writeFileSync(fname_out, taggedSongBuffer);
-}
-
-
 // CATEGORIES MANAGEMENT
 
 ipcMain.on('category:get', function(e, category){
@@ -142,4 +115,54 @@ function readCategories(){
   let line;
   while (line = liner.next()) categories.push(line.toString('utf8'));
   return categories;
+}
+
+
+// WRITE DATA
+
+ipcMain.on("compute:run", function(e, data){
+  let n = data["songsData"].length;
+  mainWindow.webContents.send('compute:start', "");
+  let success = [];
+  let failure = [];
+  data["songsData"].forEach((songData, index) => {
+    let out = copySong(songData, data["destination"]);
+    mainWindow.webContents.send('compute:run', Math.round((index+1)/n*100));
+    if(out) success.push(out);
+    else failure.push(songData["source"]);
+  });
+  mainWindow.webContents.send('compute:end', {success: success, failure: failure});
+})
+
+function copySong(data, root){
+  //let img_name_in = 'static/img/u2.jpg';
+  if(data['category'] == '') data['category'] = 'UNCLASSIFIED'
+  let folder = path.join(root, data['category']);
+  if(!fs.existsSync(folder)) fs.mkdirSync(folder);
+  let fname_out = path.join(folder, data['fname'].replace(/\//g, '&'));
+  
+  if(!fs.existsSync(fname_out)){
+    const songBuffer = fs.readFileSync(data['source']);
+    const writer = new ID3Writer(songBuffer);
+    writer.setFrame('TIT2', data['title'])
+          .setFrame('TPE1', [data['artist']])
+          .setFrame('TCON', [data['category']])
+    if(data['picture'].length >0 ){
+      const coverBuffer = Buffer.from(data["picture"], 'base64');
+      writer.setFrame('APIC', {
+          type: 3,
+          data: coverBuffer,
+          description: 'Super picture'
+      });
+    }
+    writer.addTag();
+    const taggedSongBuffer = Buffer.from(writer.arrayBuffer);
+    fs.writeFileSync(fname_out, taggedSongBuffer);
+    console.log("INFO: File written - " + fname_out);
+    return fname_out;
+  }
+  else{
+    console.log("WARNING: File already exists - " + fname_out);
+    return false;
+  }
 }
