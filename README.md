@@ -22,7 +22,7 @@ npm install
 
 In order to use it, run the command in terminal in the root folder :
 ```
-npm run
+npm start
 ```
 
 To export the app, run one of the following commands, according to your operating system :
